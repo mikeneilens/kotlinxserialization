@@ -74,6 +74,7 @@ class MainTest {
     "lastName": "neilens"
 }""", encoded)
     }
+
     @Test
     fun `simple example of lenient decoding`() {
         val jsonFormatter = Json { isLenient = true}
@@ -103,5 +104,55 @@ class MainTest {
         val decoded = jsonFormatter.decodeFromString<Sample>(json)
         assertEquals("mike", decoded.firstName)
         assertEquals("neilens", decoded.lastName)
+    }
+
+    @Test
+    fun `simple example of encoding using a different property name`() {
+        @Serializable
+        data class Sample (val firstName:String, @SerialName("surname") val lastName:String="blogs" )
+
+        val sample = Sample("Mike", "Neilens")
+        val encoded = Json.encodeToString(sample)
+        assertEquals("""{"firstName":"Mike","surname":"Neilens"}""", encoded)
+
+        val json = """{"firstName":"Mike","surname":"Neilens"}"""
+        val decodedSample = Json.decodeFromString<Sample>(json)
+        assertEquals("Mike", decodedSample.firstName)
+        assertEquals("Neilens", decodedSample.lastName)
+    }
+
+    @Test
+    fun `simple example of encoding a list directly, lists are serializable by default`() {
+        @Serializable
+        data class Person (val firstName:String, val lastName:String="blogs" )
+
+        val sample = listOf(Person("Mike","Neilens"), Person("Fred","Blogs"))
+        val encoded = Json.encodeToString(sample)
+        assertEquals("""[{"firstName":"Mike","lastName":"Neilens"},{"firstName":"Fred","lastName":"Blogs"}]""", encoded)
+    }
+
+    @Test
+    fun `simple example of encoding a class containing a list`() {
+        @Serializable
+        data class Person (val firstName:String, val lastName:String="blogs" )
+        @Serializable
+        data class People(val people:List<Person>)
+
+        val persons = listOf(Person("Mike","Neilens"), Person("Fred","Blogs"))
+        val sample = People(persons)
+        val encoded = Json.encodeToString(sample)
+        assertEquals("""{"people":[{"firstName":"Mike","lastName":"Neilens"},{"firstName":"Fred","lastName":"Blogs"}]}""", encoded)
+    }
+
+    @Test
+    fun `simple example of encoding a class with a property that is a class`() {
+        @Serializable
+        data class Address (val firstLine:String, val secondLine:String, val city:String, val postCode:String)
+        @Serializable
+        data class Person (val firstName:String, val lastName:String, val address:Address )
+
+        val person = Person("Mike","Neilens", address = Address("10 downing street", "westminster", "london", "SW1"))
+        val encoded = Json.encodeToString(person)
+        assertEquals("""{"firstName":"Mike","lastName":"Neilens","address":{"firstLine":"10 downing street","secondLine":"westminster","city":"london","postCode":"SW1"}}""", encoded)
     }
 }
